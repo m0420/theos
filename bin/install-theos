@@ -87,15 +87,15 @@ set_theos() {
 		if [[ $PLATFORM == Darwin && ! -x $(command -v xcode-select) && -f /.bootstrapped ]]; then
 			# checkra1n has no exec in var, so need to set
 			#  up '/opt' for use with Theos as mobile user
-			echo "export THEOS=/opt/theos" >> "$SHELL_ENV"
-			export THEOS=/opt/theos
-			if [[ -d /opt ]]; then
+			echo "export THEOS=/var/jb/opt/theos" >> "$SHELL_ENV"
+			export THEOS=/var/jb/opt/theos
+			if [[ -d /var/jb/opt ]]; then
 				update "'/opt' already exists. Checking its ownership..."
 				# Check that '/opt' isn't owned by root
-				OWNER="$(stat -c '%U' /opt)"
+				OWNER="$(stat -c '%U' /var/jb/opt)"
 				if [[ $OWNER == root ]]; then
 					update "Owner of '/opt' is root. Attempting to switch owner to mobile..."
-					sudo chown mobile /opt \
+					sudo chown mobile /var/jb/opt \
 						&& update "Owner of '/opt' successfully transfered to mobile from root!" \
 						|| (error "Failed to transfer ownership of '/opt' to mobile from root. Please see the log above."; exit 9)
 				else
@@ -103,7 +103,7 @@ set_theos() {
 				fi
 			else
 				update "Creating a special directory to house Theos..."
-				sudo install -d -o mobile -g mobile /opt \
+				sudo install -d -o mobile -g mobile /var/jb/opt \
 					&& update "Special directory for Theos created successfully!" \
 					|| (error "Special directory create command seems to have encountered an error. Please see the log above."; exit 9)
 			fi
@@ -220,45 +220,6 @@ darwin_mobile() {
 		exit 3
 	fi
 
-	# Dependencies
-	update "Preparing to install dependencies. Please enter your password if prompted:"
-	if [[ $LEGACY -eq 1 ]]; then
-		read -p "Do you have 'https://coolstar.org/publicrepo/', 'https://repo.bingner.com/', and 'http://apt.thebigboss.org/repofiles/cydia/' installed in the sources of your jailbreak's primary package manager? [y/n]" ready
-		if theos_bool $ready; then
-			sudo apt-get update --allow-insecure-repositories
-			sudo apt-get install -y --allow-unauthenticated --allow-downgrades org.theos.dependencies \
-				&& update "Dependencies have been successfully installed!" \
-				|| (error "Dependency install command seems to have encountered an error. Please see the log above."; exit 3)
-		else
-			error "Please install the repos mentioned above before proceeding."
-			exit 3
-		fi
-	else
-		# Up-to-date dependencies pkg is exclusive to Procursus, so need to cater install accordingly
-		if [[ -f /.procursus_strapped ]]; then
-			read -p "Do you have 'https://apt.procurs.us' installed in the sources of your jailbreak's primary package manager? [y/n]" ready
-			if theos_bool $ready; then
-				sudo apt update --allow-insecure-repositories
-				sudo apt install -y --allow-downgrades theos-dependencies \
-					&& update "Dependencies have been successfully installed!" \
-					|| (error "Dependency install command seems to have encountered an error. Please see the log above."; exit 3)
-			else
-				error "Please install the repo mentioned above before proceeding."
-				exit 3
-			fi
-		else
-			read -p "Do you have 'https://apt.bingner.com' installed in the sources of your jailbreak's primary package manager? [y/n]" ready
-			if theos_bool $ready; then
-				sudo apt update --allow-insecure-repositories
-				sudo apt install -y --allow-downgrades ca-certificates clang coreutils curl dpkg git grep ldid make odcctools perl com.bingner.plutil rsync xz \
-					&& update "Dependencies have been successfully installed!" \
-					|| (error "Dependency install command seems to have encountered an error. Please see the log above."; exit 3)
-			else
-				error "Please install the repo mentioned above before proceeding."
-				exit 3
-			fi
-		fi
-	fi
 
 	# Check desire for Swift support
 	update "Checking desire for Swift support..."
